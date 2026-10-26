@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ShipCheck: trust agent-written code before you ship it</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1a1a17;--mut:#5f5f57;--card:#fff;--line:#e3e2da;--acc:#c2410c;--hi:#b91c1c;--med:#a16207;--low:#4d7c0f;--code:#f1f0ea;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#13130f;--fg:#f1f0ea;--mut:#a3a398;--card:#1c1c17;--line:#34342c;--acc:#fb923c;--hi:#f87171;--med:#fbbf24;--low:#a3e635;--code:#23231d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#13130f;--fg:#f1f0ea;--mut:#a3a398;--card:#1c1c17;--line:#34342c;--acc:#fb923c;--hi:#f87171;--med:#fbbf24;--low:#a3e635;--code:#23231d;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:48px 20px 72px}
+h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.1;margin:0 0 16px;letter-spacing:-.02em}
+h2{font-size:1.4rem;margin:48px 0 14px}
+p{margin:0 0 14px}.lead{font-size:1.15rem;color:var(--mut);max-width:60ch}
+.tag{display:inline-block;color:var(--acc);font-weight:600;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+.btn{display:inline-block;background:var(--acc);color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;margin:8px 10px 0 0}
+.btn.alt{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.card h3{margin:0 0 6px;font-size:1.05rem}.card code{font-size:.85rem}.card p{color:var(--mut);margin:0;font-size:.95rem}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:ui-monospace,Consolas,monospace;font-size:.9em}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.92rem}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:600}tr:last-child td{border-bottom:0}
+.hi{color:var(--hi);font-weight:700}.med{color:var(--med);font-weight:700}.low{color:var(--low);font-weight:700}
+.verdict{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:baseline;margin-bottom:14px}
+.verdict b{font-size:1.6rem;color:var(--hi)}
+ol{padding-left:20px}ol li{margin-bottom:8px}
+pre{background:var(--code);padding:14px;border-radius:10px;overflow-x:auto;font-size:.85rem;margin:0 0 14px}
+footer{margin-top:56px;color:var(--mut);font-size:.9rem}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+<span class="tag">Open-source skills for Alan</span>
+<h1>Know whether agent-written code is safe to ship.</h1>
+<p class="lead">Coding agents write code faster than people can review it. ShipCheck turns “I hope this is fine” into evidence a reviewer can read in two minutes, and keeps work resumable between people and agents.</p>
+<a class="btn" href="https://github.com/dhanwalkarjay/shipcheck">View on GitHub</a>
+<a class="btn alt" href="#install">Install in Alan</a>
+
+<h2>Three skills</h2>
+<div class="grid">
+<div class="card"><h3>PR trust report</h3><p><code>pr-trust-report</code> scans a change for risk, maps every task requirement to evidence, and saves a one-page report as a task artifact.</p></div>
+<div class="card"><h3>Plan lint</h3><p><code>plan-lint</code> scores a plan on seven dimensions, quotes the vague lines, and gives paste-ready rewrites before any code is written.</p></div>
+<div class="card"><h3>Task handoff</h3><p><code>task-handoff</code> records state, decisions and reasons, dead ends, and the next three actions so another agent can continue without the chat.</p></div>
+</div>
+
+<h2>Real output</h2>
+<p>An agent added a retry feature. A skim would say “looks fine”. The trust report found this:</p>
+<div class="verdict"><b>Blocked</b><span>Risk scan: <span class="hi">HIGH</span> · 6 files (+19 / −8) · 2 test files touched</span></div>
+<div class="scroll"><table>
+<tr><th>Severity</th><th>Signal</th><th>File</th></tr>
+<tr><td class="hi">high</td><td>Hard-coded credential added</td><td><code>src/auth/session.py</code></td></tr>
+<tr><td class="hi">high</td><td>TLS verification disabled</td><td><code>src/auth/session.py</code></td></tr>
+<tr><td class="hi">high</td><td>Test file deleted</td><td><code>tests/test_checkout.py</code></td></tr>
+<tr><td class="hi">high</td><td>Test skipped</td><td><code>tests/test_session.py</code></td></tr>
+<tr><td class="hi">high</td><td>Database migration</td><td><code>migrations/0042_add_retry.sql</code></td></tr>
+<tr><td class="med">medium</td><td>Errors silently swallowed</td><td><code>src/auth/session.py</code></td></tr>
+<tr><td class="med">medium</td><td>Dependencies changed</td><td><code>package.json</code></td></tr>
+</table></div>
+<p style="margin-top:14px">The agent then read the code and found what no scanner can: <code>retry(req)</code> is called but never defined, so every request would crash. Each requirement gets a verdict (Met, Partial, Missing, Unverified) with a <code>path:line</code> as evidence. No evidence means “Unverified”, never “Met”.</p>
+
+<h2>How it works</h2>
+<p>The part that must be reliable is not left to a model. <code>pr-trust-report</code> bundles a deterministic scanner (Python standard library, no network, no model calls) that gives the same answer every time and costs nothing to run. The agent then decides which signals are real, and every report ends with a “Not checked” section so unknowns stay visible.</p>
+
+<h2 id="install">Install in Alan</h2>
+<ol>
+<li>Open <b>Skills</b>, then <b>Team skills</b>.</li>
+<li>Choose <b>Import</b>, then <b>From GitHub</b>.</li>
+<li>Paste <code>https://github.com/dhanwalkarjay/shipcheck</code>, review the files, and choose <b>Add to team</b>.</li>
+</ol>
+<p>Then type <code>/</code> in any session and pick a skill, or just ask.</p>
+<pre>Run a trust report on this branch against the task requirements.
+Lint the plan before we start building.
+Write a handoff for this task, I’m stopping for today.</pre>
+
+<h2>Use the scanner anywhere</h2>
+<pre>python3 risk_scan.py --base main --head HEAD --format md
+python3 risk_scan.py --base main --fail-on high   # exit code 2 in CI</pre>
+<p>A ready-made GitHub Action in the repo runs it on every pull request.</p>
+
+<footer>MIT licensed · Built for the Openfire hackathon · Reads text patterns only: it cannot find logic bugs or run your tests, and says so in every report.</footer>
+</main>
+</body>
+</html>
