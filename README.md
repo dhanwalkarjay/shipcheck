@@ -34,7 +34,7 @@ The full agent-written report, with requirement-by-requirement verdicts, is in [
 
 1. Open **Skills** in your team sidebar and choose **Team skills**.
 2. Choose **Import**, then **From GitHub**.
-3. Paste the link to this repo (`https://github.com/<your-username>/shipcheck`), or to a single skill folder such as `.../shipcheck/tree/main/skills/pr-trust-report`.
+3. Paste the link to this repo (`https://github.com/dhanwalkarjay/shipcheck`), or to a single skill folder such as `.../shipcheck/tree/main/skills/pr-trust-report`.
 4. Choose **Review skill**, read the files, then **Add to team**.
 
 Then, in any session, type `/` and pick a skill, or just ask. Agents load a matching skill on their own when your request fits its description:

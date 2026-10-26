@@ -11,7 +11,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Fetch ShipCheck
-        run: git clone --depth 1 https://github.com/<your-username>/shipcheck.git /tmp/shipcheck
+        run: git clone --depth 1 https://github.com/dhanwalkarjay/shipcheck.git /tmp/shipcheck
       - name: Risk scan
         run: |
           python3 /tmp/shipcheck/skills/pr-trust-report/scripts/risk_scan.py \
