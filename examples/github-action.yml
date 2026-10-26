@@ -1,0 +1,22 @@
+# Drop this into .github/workflows/shipcheck.yml in YOUR repository.
+# It runs the ShipCheck risk scan on every pull request and shows the result
+# in the job summary. No secrets and no model calls needed.
+name: shipcheck
+on: [pull_request]
+jobs:
+  risk-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch ShipCheck
+        run: git clone --depth 1 https://github.com/<your-username>/shipcheck.git /tmp/shipcheck
+      - name: Risk scan
+        run: |
+          python3 /tmp/shipcheck/skills/pr-trust-report/scripts/risk_scan.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --format md | tee -a "$GITHUB_STEP_SUMMARY"
+      # Optional: fail the check on high risk.
+      # - run: python3 /tmp/shipcheck/skills/pr-trust-report/scripts/risk_scan.py --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}" --fail-on high >/dev/null
