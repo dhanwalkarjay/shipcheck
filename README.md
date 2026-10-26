@@ -19,11 +19,11 @@ Overall risk: HIGH
 6 files (+19 / -8), 2 test file(s) touched.
 
 | high   | Database schema or migration files changed        | migrations/0042_add_retry.sql |
-| high   | Files in auth/security-sensitive paths changed    | src/auth/session.py          |
+| high   | Files in auth/security-sensitive paths changed    | src/auth/session.py           |
 | high   | Test files were deleted                           | tests/test_checkout.py        |
 | high   | Tests were skipped, focused (.only) or disabled   | tests/test_session.py         |
-| high   | Added code that disables TLS verification or auth | src/auth/session.py          |
-| high   | Possible secret added (hard-coded credential)     | src/auth/session.py          |
+| high   | Added code that disables TLS verification or auth | src/auth/session.py           |
+| high   | Possible secret added (hard-coded credential)     | src/auth/session.py           |
 | medium | Dependency manifest or lockfile changed           | package.json                  |
 | medium | Errors are caught and silently ignored            | src/auth/session.py           |
 ```
