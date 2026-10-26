@@ -11,7 +11,17 @@ This skill is read-only. It never changes the plan itself. It produces findings 
 
 ## Inputs
 
-The plan to review: a Plan artifact, a document, or text the user pastes. If the task has a plan artifact, read it. If you cannot find one, ask the user to point to it once, then stop.
+Find the plan to lint, using the first source that exists. **Never stop to ask which one to use.**
+
+1. Text the user pasted or quoted in their message (including a one-line plan like "make checkout more robust"). Lint exactly that.
+2. A Plan artifact on the current task or team.
+3. The task description or acceptance criteria, or a spec file such as `TASK.md`, `PLAN.md` or `SPEC.md` in the repository.
+
+State in one line which source you linted. If none exists at all, say so and ask the user to paste the plan, once.
+
+## What this skill is not
+
+Plan Lint reviews the **text of a plan**. It does not design the solution, choose between scopes, write code, or audit the codebase. If the plan is vague, the correct output is a low score with quoted weak lines and rewrites, **not** a design proposal and **not** a menu of options for the user to pick from. Reading the repository is allowed only to check whether a plan's claims (file names, functions) are real.
 
 ## Steps
 
@@ -19,7 +29,7 @@ The plan to review: a Plan artifact, a document, or text the user pastes. If the
 2. **Score each dimension 0, 1 or 2** using `references/rubric.md`. 0 = absent or unusable, 1 = present but weak, 2 = solid. Do not give a 2 unless you can point to the text that earns it.
 3. **Quote, don't paraphrase.** For every dimension scored below 2, quote the weak line(s) exactly and say in one sentence why they are weak.
 4. **Rewrite.** For each weak line, give a concrete replacement the author could paste in. A rewrite must be specific enough to be tested. "Handle errors gracefully" is not a rewrite; "Return HTTP 400 with `{error: 'invalid_duration'}` when the input does not match `^\d+[smh]$`" is.
-5. **Check for missing questions.** List up to five questions the plan should answer but does not, each tied to a decision an agent would otherwise guess.
+5. **Check for missing questions.** List up to five questions the plan should answer but does not, each tied to a decision an agent would otherwise guess. Put these in the report. Do not stop and wait for answers; the report is the deliverable.
 6. **Give the verdict**: Ready to build (score 13 or more, no 0s), Fix first (8 to 12, or any 0), or Rework (under 8).
 7. **Save the result** as a **Document artifact** on the current task, titled `Plan lint: <plan title>`, using Alan's artifact tools. If artifact tools are unavailable, reply in chat.
 
@@ -53,6 +63,8 @@ Suggested rewrite: <paste-ready text>
 
 - Be direct and specific, not harsh. The goal is a better plan.
 - Never invent requirements the author did not imply. If something seems missing, ask it as a question.
+- Always produce the full report in the output format below, even for a one-line plan. A vague plan simply scores low.
+- Do not offer scope options or buttons, and do not start building anything.
 - Do not score down for style or length. Score only whether an agent could execute the plan correctly.
 - A short plan can score 14/14. Do not demand ceremony.
 
