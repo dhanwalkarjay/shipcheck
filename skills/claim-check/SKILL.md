@@ -11,7 +11,7 @@ This skill is read-only. Do not edit code, commit, or push.
 
 ## Inputs
 
-1. **The claims**: the agent's final message, a PR description, or text the user pasted. If the user does not provide it, use the last summary the agent wrote in this conversation. Save it to a temporary text file.
+1. **The claims**: the agent's final message, a PR description, or text the user pasted. If the user does not provide it, use the last summary the agent wrote in this conversation. Save it to a temporary text file **outside the repository** (for example in the system temp directory), so the working tree stays clean.
 2. **The change**: a branch or working tree compared with the default branch.
 
 ## Steps
