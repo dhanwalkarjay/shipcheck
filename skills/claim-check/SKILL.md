@@ -38,7 +38,7 @@ For each unverified claim, find real evidence, then change its verdict:
 - **"No breaking changes"**: search the repository for callers of each removed or changed definition the checker listed.
 - **Anything the checker did not recognise**: pick the 3 most important sentences in the summary that a reviewer would rely on, and check them the same way.
 
-Never upgrade a claim to **supported** without citing a command output or `path:line`.
+The checker matches text patterns and does not understand negation. If a flagged sentence is actually a denial or a quotation (for example, "we did not add tests"), say so and override the verdict with evidence. Never upgrade a claim to **supported** without citing a command output or `path:line`.
 
 ### 3. Report
 

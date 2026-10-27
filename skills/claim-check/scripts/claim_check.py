@@ -43,6 +43,23 @@ DISABLED = re.compile(r"\.skip\(|@pytest\.mark\.(skip|xfail)|\bxit\(|@unittest\.
 DEFINITION = re.compile(r"^\s*(def |class |function |export |public |async function )")
 
 
+def read_text_file(path):
+    """Read a text file robustly: UTF-8, UTF-8 with BOM, or UTF-16 (what Windows
+    PowerShell produces with '>'). Never raises on bad bytes."""
+    with (sys.stdin.buffer if path == "-" else open(path, "rb")) as fh:
+        return decode_bytes(fh.read())
+
+
+def decode_bytes(data):
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return data.decode("utf-16", errors="replace")
+    if data.startswith(b"\xef\xbb\xbf"):
+        return data.decode("utf-8-sig", errors="replace")
+    if b"\x00" in data[:200]:  # UTF-16 without a BOM
+        return data.decode("utf-16-le", errors="replace")
+    return data.decode("utf-8", errors="replace")
+
+
 def parse_diff(text):
     files, cur = {}, None
     for line in text.splitlines():
@@ -79,11 +96,22 @@ def sentence_of(text, match):
     return " ".join(text[start:end].split())[:200]
 
 
+QUOTED = re.compile(r'"[^"\n]{3,300}"|\u201c[^\u201d\n]{3,300}\u201d')
+
+
+def mask_quotes(text):
+    """Blank out double-quoted spans (same length, so offsets still line up).
+    Quoted text is a mention of a claim, not an assertion of it, e.g.
+    'the sentence "dependencies untouched" is false'."""
+    return QUOTED.sub(lambda m: " " * len(m.group()), text)
+
+
 def claim(kind, text, verdict, evidence):
     return {"type": kind, "claim": text, "verdict": verdict, "evidence": evidence}
 
 
-def check(summary, files):
+def check(original, files):
+    summary = mask_quotes(original)
     out = []
     paths = list(files)
     test_files = [p for p in paths if is_test(p)]
@@ -95,7 +123,7 @@ def check(summary, files):
                 and not all(DISABLED.search(l) or not l.strip() or l.strip() == "pass"
                             for l in files[p]["added"])]
         if real:
-            out.append(claim("added-tests", sentence_of(summary, m), "supported",
+            out.append(claim("added-tests", sentence_of(original, m), "supported",
                              "New test code with assertions in: " + ", ".join(real)))
         else:
             why = "no test file with new assertions in the diff"
@@ -105,7 +133,7 @@ def check(summary, files):
             skipped = [p for p in test_files if any(DISABLED.search(l) for l in files[p]["added"])]
             if skipped:
                 why += "; tests were skipped in: " + ", ".join(skipped)
-            out.append(claim("added-tests", sentence_of(summary, m), "contradicted", why))
+            out.append(claim("added-tests", sentence_of(original, m), "contradicted", why))
         break
 
     # 2. "N tests passing"
@@ -122,7 +150,7 @@ def check(summary, files):
         ev = "The diff cannot show test results. Run the test command and compare the count."
         if warn:
             ev += " Caution: " + "; ".join(warn) + ", so a green run may hide missing coverage."
-        out.append(claim("tests-pass", sentence_of(summary, m), "unverified", ev))
+        out.append(claim("tests-pass", sentence_of(original, m), "unverified", ev))
 
     # 3. "no new dependencies"
     m = re.search(r"(?i)\b(no\s+(new\s+)?(dependenc(y|ies)|deps|packages?)|dependenc(y|ies)\s+(are\s+|is\s+)?(untouched|unchanged)|without\s+(adding|new)\s+dependenc)", summary)
@@ -130,10 +158,10 @@ def check(summary, files):
         added = [(p, l.strip()) for p in paths if DEPS_PATH.search(p)
                  for l in files[p]["added"] if DEP_LINE.search(l.strip())]
         if added:
-            out.append(claim("no-new-deps", sentence_of(summary, m), "contradicted",
+            out.append(claim("no-new-deps", sentence_of(original, m), "contradicted",
                              "Dependency-like lines added: " + "; ".join(f"{p}: {l[:80]}" for p, l in added[:4])))
         else:
-            out.append(claim("no-new-deps", sentence_of(summary, m), "supported",
+            out.append(claim("no-new-deps", sentence_of(original, m), "supported",
                              "No dependency lines added in manifest files."))
 
     # 4. "no hard-coded secrets"
@@ -141,10 +169,10 @@ def check(summary, files):
     if m:
         hit = [p for p in paths if any(SECRET.search(l) for l in files[p]["added"])]
         if hit:
-            out.append(claim("no-secrets", sentence_of(summary, m), "contradicted",
+            out.append(claim("no-secrets", sentence_of(original, m), "contradicted",
                              "Secret-like string added in: " + ", ".join(hit)))
         else:
-            out.append(claim("no-secrets", sentence_of(summary, m), "supported",
+            out.append(claim("no-secrets", sentence_of(original, m), "supported",
                              "No secret-like strings found in added lines."))
 
     # 5. "only touched X"
@@ -153,10 +181,10 @@ def check(summary, files):
         target = m.group(6).rstrip(".,;:")
         others = [p for p in paths if target not in p]
         if others:
-            out.append(claim("scope-only", sentence_of(summary, m), "contradicted",
+            out.append(claim("scope-only", sentence_of(original, m), "contradicted",
                              f"Files outside `{target}` also changed: " + ", ".join(others[:6])))
         else:
-            out.append(claim("scope-only", sentence_of(summary, m), "supported",
+            out.append(claim("scope-only", sentence_of(original, m), "supported",
                              f"Every changed file matches `{target}`."))
 
     # 6. "no breaking changes / backwards compatible"
@@ -166,14 +194,14 @@ def check(summary, files):
                         for l in files[p]["removed"] if DEFINITION.match(l)]
         migr = [p for p in paths if p.endswith(".sql") or "migrations" in p]
         if removed_defs:
-            out.append(claim("no-breaking", sentence_of(summary, m), "unverified",
+            out.append(claim("no-breaking", sentence_of(original, m), "unverified",
                              "Definitions were removed or changed: " + "; ".join(
                                  f"{p}: {l[:60]}" for p, l in removed_defs[:4]) + ". Check callers."))
         elif migr:
-            out.append(claim("no-breaking", sentence_of(summary, m), "unverified",
+            out.append(claim("no-breaking", sentence_of(original, m), "unverified",
                              "A schema change is included (" + ", ".join(migr[:3]) + "); check it is backward compatible."))
         else:
-            out.append(claim("no-breaking", sentence_of(summary, m), "unverified",
+            out.append(claim("no-breaking", sentence_of(original, m), "unverified",
                              "No removed definitions found, but the diff cannot prove compatibility."))
 
     # 7. "removed debug/unused"
@@ -181,7 +209,7 @@ def check(summary, files):
     if m:
         left = [p for p in paths if not is_test(p) and any(
             re.search(r"console\.log\(|\bdebugger\b|pdb\.set_trace\(|breakpoint\(\)", l) for l in files[p]["added"])]
-        out.append(claim("removed-debug", sentence_of(summary, m),
+        out.append(claim("removed-debug", sentence_of(original, m),
                          "contradicted" if left else "supported",
                          ("Debug statements still added in: " + ", ".join(left)) if left
                          else "No new debug statements in added lines."))
@@ -190,8 +218,7 @@ def check(summary, files):
 
 def get_diff(args):
     if args.diff_file:
-        with open(args.diff_file, encoding="utf-8", errors="replace") as fh:
-            return fh.read()
+        return read_text_file(args.diff_file)
     for rng in (f"{args.base}...{args.head}", f"{args.base}..{args.head}"):
         res = subprocess.run(["git", "-C", args.repo, "diff", "--no-color", "-U0", rng],
                              capture_output=True, text=True)
@@ -222,8 +249,7 @@ def main(argv=None):
     ap.add_argument("--fail-on-contradicted", action="store_true")
     args = ap.parse_args(argv)
 
-    summary = sys.stdin.read() if args.summary_file == "-" else open(
-        args.summary_file, encoding="utf-8", errors="replace").read()
+    summary = read_text_file(args.summary_file)
     claims = check(summary, parse_diff(get_diff(args)))
     counts = {k: sum(1 for c in claims if c["verdict"] == k)
               for k in ("supported", "contradicted", "unverified")}

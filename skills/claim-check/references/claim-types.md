@@ -14,6 +14,8 @@ The checker recognises these claims. Use this list to check them by hand if the 
 
 ## What it cannot do
 
+It ignores text inside double quotation marks, because a quoted phrase mentions a claim rather than making one. Negation is not understood: \"we did not add tests\" without quotes can still match as a claim, so read each flagged sentence before overriding or accepting a verdict.
+
 It reads patterns in text. It cannot judge whether a claim like "improved performance" is true, and it does not run your tests. Those belong in the report's "Not checked" section.
 
 ## Adding a claim type
